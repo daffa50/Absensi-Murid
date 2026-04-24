@@ -231,7 +231,7 @@
                 const audio = document.getElementById('localAudio');
                 if (audio) { audio.currentTime = 0; audio.play().catch(e => {}); }
                 
-                speakText(`Perhatian. Murid bernama ${name} terlambat. Batas masuk adalah jam 07:40. Tugas hukuman anda adalah ${punishment}. Segera kerjakan.`);
+                speakText(`Murid bernama ${name} terlambat. Batas masuk adalah jam 07:40. Tugas hukuman anda adalah ${punishment}. Segera kerjakan.`);
             } else {
                 speakText(`Murid bernama ${name} hadir tepat waktu. Selamat belajar.`);
             }
