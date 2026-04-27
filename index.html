@@ -77,7 +77,7 @@
 
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
                     <h3 class="text-xs font-bold text-indigo-900 mb-4 uppercase tracking-widest flex items-center gap-2">
-                        <i class="fas fa-sync-alt"></i> Rotasi Alat Kebersihan
+                        <i class="fas fa-sync-alt"></i> Rotasi Hukuman Siswa/i
                     </h3>
                     <div id="toolStatusGrid" class="space-y-2"></div>
                 </div>
@@ -85,15 +85,15 @@
                 <!-- Audio Control Panel -->
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
                     <h3 class="text-xs font-bold text-indigo-900 mb-4 uppercase tracking-widest">Lagu SMK BINA MANDIRI</h3>
-                    <audio id="localAudio" preload="auto">
-                        <source src="lagu-SMK.mp3" type="audio/mp3">
+                    <audio id="localAudio" preload="auto" loop>
+                        <source src="lagu-SMK.mp3" type="audio/mpeg">
                         Browser tidak mendukung elemen audio.
                     </audio>
                     <div class="flex flex-col gap-3">
-                        <button onclick="testAudio()" class="w-full bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2">
-                            <i class="fas fa-play"></i> Test Suara MP3
+                        <button id="btnPlayMP3" onclick="toggleAudio()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg">
+                            <i id="iconPlay" class="fas fa-play"></i> <span id="textPlay">Putar Suara MP3</span>
                         </button>
-                        <p class="text-[10px] text-slate-400 text-center leading-relaxed">Pastikan file <b>suara.mp3</b> berada di folder yang sama untuk diputar otomatis saat terlambat.</p>
+                        <p class="text-[10px] text-slate-400 text-center leading-relaxed italic">Audio MP3 sekarang dikontrol secara manual (dipencet baru nyala).</p>
                     </div>
                 </div>
             </div>
@@ -148,13 +148,29 @@
             "Teras Depan Kelas": false 
         };
 
-        function testAudio() {
+        // Fungsi Toggle Audio Manual
+        function toggleAudio() {
             const audio = document.getElementById('localAudio');
-            audio.currentTime = 0;
-            audio.play().catch(e => {
-                alert("Error Audio: Pastikan file 'suara.mp3' tersedia di folder yang sama.");
-                console.error(e);
-            });
+            const icon = document.getElementById('iconPlay');
+            const text = document.getElementById('textPlay');
+            const btn = document.getElementById('btnPlayMP3');
+
+            if (audio.paused) {
+                audio.play().then(() => {
+                    icon.className = "fas fa-pause";
+                    text.innerText = "Hentikan Suara MP3";
+                    btn.classList.replace('bg-indigo-600', 'bg-red-500');
+                    btn.classList.replace('hover:bg-indigo-700', 'hover:bg-red-600');
+                }).catch(e => {
+                    alert("Gagal memutar MP3. Pastikan file 'suara.mp3' ada di folder aplikasi.");
+                });
+            } else {
+                audio.pause();
+                icon.className = "fas fa-play";
+                text.innerText = "Putar Suara MP3";
+                btn.classList.replace('bg-red-500', 'bg-indigo-600');
+                btn.classList.replace('hover:bg-red-600', 'hover:bg-indigo-700');
+            }
         }
 
         function saveData() {
@@ -177,7 +193,8 @@
         setInterval(updateClock, 1000);
         document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-        function speakText(text) {
+        // Fungsi khusus untuk Suara AI (Text-to-Speech) - Tetap Otomatis
+        function speakTextAI(text) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'id-ID'; 
@@ -237,16 +254,10 @@
                 punishment = `${tool} di ${loc}`;
                 locationTools[loc] = !locationTools[loc];
                 
-                // Putar suara MP3 saat terlambat
-                const audio = document.getElementById('localAudio');
-                if (audio) { 
-                    audio.currentTime = 0; 
-                    audio.play().catch(e => console.log("Gagal putar MP3 otomatis:", e)); 
-                }
-                
-                speakText(`Perhatian. Murid bernama ${name} terlambat. Tugas hukuman anda adalah ${punishment}.`);
+                // Hanya memanggil suara AI, MP3 diputar manual lewat tombol
+                speakTextAI(`Perhatian. Murid bernama ${name} terlambat. Tugas hukuman anda adalah ${punishment}.`);
             } else {
-                speakText(`Murid bernama ${name} hadir tepat waktu.`);
+                speakTextAI(`Murid bernama ${name} hadir tepat waktu.`);
             }
 
             attendanceLogs.unshift({ name, time: timeString, status, punishment });
