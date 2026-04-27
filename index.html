@@ -11,6 +11,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
@@ -22,23 +24,21 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
         
-        /* Animasi halus untuk interaksi */
         .transition-all { transition: all 0.3s ease; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen">
 
     <div class="max-w-7xl mx-auto p-4 md:p-8">
-        <!-- Header dengan Jam Digital -->
+        <!-- Header -->
         <header class="flex flex-col md:flex-row md:items-center justify-between mb-8 bg-indigo-900 p-8 rounded-[2rem] shadow-xl text-white gap-6">
             <div class="flex items-center gap-4">
                 <div class="bg-white p-2 rounded-2xl overflow-hidden flex items-center justify-center w-20 h-20 shadow-lg">
-                    <!-- Menampilkan logo.png - Pastikan file ada di root folder GitHub Anda -->
                     <img src="logo.png" alt="Logo Sekolah" class="max-w-full max-h-full object-contain" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fas fa-school text-3xl text-indigo-900\'></i>';">
                 </div>
                 <div>
                     <h1 class="text-3xl font-extrabold tracking-tight">Monitoring Kehadiran</h1>
-                    <p class="text-indigo-200">Batas Masuk: <span class="font-bold text-white">07:40 WIB</span></p>
+                    <p class="text-indigo-200">Jam Masuk: <span class="font-bold text-white">07:30</span> | Batas: <span class="font-bold text-white">07:40 WIB</span></p>
                 </div>
             </div>
             
@@ -46,12 +46,15 @@
                 <div id="digitalClock" class="text-4xl font-black tracking-widest text-yellow-400 font-mono bg-black/20 px-6 py-2 rounded-2xl border border-white/10">
                     00:00:00
                 </div>
-                <div class="flex gap-2">
-                    <button onclick="downloadExcel()" class="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-md hover:shadow-green-200 active:scale-95">
-                        <i class="fas fa-file-excel"></i> Export Excel
+                <div class="flex flex-wrap justify-end gap-2">
+                    <button onclick="downloadExcel()" class="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-md active:scale-95">
+                        <i class="fas fa-file-excel"></i> Excel
+                    </button>
+                    <button onclick="downloadWord()" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-md active:scale-95">
+                        <i class="fas fa-file-word"></i> Word
                     </button>
                     <button onclick="resetAttendance()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl text-xs font-bold transition-all border border-white/10 active:scale-95">
-                        Reset Data
+                        Reset
                     </button>
                 </div>
             </div>
@@ -60,7 +63,6 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <!-- Panel Kontrol -->
             <div class="lg:col-span-4 space-y-6">
-                <!-- Dropdown Pilih Nama -->
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
                     <label class="block text-xs font-bold text-slate-400 mb-3 uppercase tracking-widest">Pencatatan Kehadiran:</label>
                     <div class="relative">
@@ -71,12 +73,8 @@
                             <i class="fas fa-chevron-down"></i>
                         </div>
                     </div>
-                    <p class="mt-4 text-[11px] text-slate-500 leading-relaxed italic">
-                        *Sistem otomatis mendeteksi keterlambatan jika pelaporan dilakukan lewat dari pukul 07:40.
-                    </p>
                 </div>
 
-                <!-- Status Alat -->
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
                     <h3 class="text-xs font-bold text-indigo-900 mb-4 uppercase tracking-widest flex items-center gap-2">
                         <i class="fas fa-sync-alt"></i> Rotasi Alat Kebersihan
@@ -84,12 +82,19 @@
                     <div id="toolStatusGrid" class="space-y-2"></div>
                 </div>
 
-                <!-- Audio Control (Opsional) -->
-                <div class="bg-slate-100 p-4 rounded-2xl border border-slate-200">
-                    <audio id="localAudio" class="w-full h-8 mb-2">
-                        <source src="suara.mp3" type="audio/mpeg">
+                <!-- Audio Control Panel -->
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                    <h3 class="text-xs font-bold text-indigo-900 mb-4 uppercase tracking-widest">Lagu SMK BINA MANDIRI</h3>
+                    <audio id="localAudio" preload="auto">
+                        <source src="lagu-SMK.mp3" type="audio/mp3">
+                        Browser tidak mendukung elemen audio.
                     </audio>
-                    <p class="text-[9px] text-center text-slate-400 uppercase font-bold tracking-widest">Audio System (suara.mp3)</p>
+                    <div class="flex flex-col gap-3">
+                        <button onclick="testAudio()" class="w-full bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-play"></i> Test Suara MP3
+                        </button>
+                        <p class="text-[10px] text-slate-400 text-center leading-relaxed">Pastikan file <b>suara.mp3</b> berada di folder yang sama untuk diputar otomatis saat terlambat.</p>
+                    </div>
                 </div>
             </div>
 
@@ -112,9 +117,7 @@
                                     <th class="p-4 border-b text-right">Tugas Hukuman</th>
                                 </tr>
                             </thead>
-                            <tbody id="attendanceBody" class="divide-y divide-slate-100 text-sm">
-                                <!-- Data akan masuk di sini -->
-                            </tbody>
+                            <tbody id="attendanceBody" class="divide-y divide-slate-100 text-sm"></tbody>
                         </table>
                     </div>
                 </div>
@@ -123,19 +126,19 @@
     </div>
 
     <script>
-        // Konfigurasi Batas Waktu
+        const START_HOUR = 7;
+        const START_MINUTE = 30;
         const LIMIT_HOUR = 7;
         const LIMIT_MINUTE = 40;
-        
+
         const LOCATIONS = ["Ruangan TU", "Ruang Guru", "Aula Serba Guna", "Teras Depan Kelas"];
         const STUDENTS = [
-            "Andika", "Dafa Nofa Erlangga", "Fahri Maulana", "Faujiah Sulaesih", 
-            "Kenzie Raditya Osas", "Siti Amelia", "Tesa Lonika Saufani", "Theresia Yunita Jadi", 
-            "Fita Bunga", "Rivky Jesen P", "Alvin Putra Pratama", "Arya Dimas Pratama", 
-            "Cornelius Rowen N", "Devi Afriyanti", "Elti Julianti Anthoneta B", "Fitria Sari Gozali", 
-            "Leni Nur'aini", "Muhammad Raihan", "Parasha Hapizah Asipa", "Raihan Ardiansyah", 
+            "Andika", "Dafa Nofa", "Fahri", "Faujiah", "Kenzie", 
+            "Amel", "Tesa", "Ita", "Bunga", "Rivky", 
+            "Alvin", "Arya", "Cornel", "Devi", "Elti", 
+            "Fitria", "Nur'aini", "Muhammad Raihan", "Parasha", "Raihan Ardiansyah", 
             "Nia", "Intan"
-        ].sort(); // Urutkan nama sesuai abjad
+        ].sort();
 
         let attendanceLogs = [];
         let locationTools = { 
@@ -145,7 +148,15 @@
             "Teras Depan Kelas": false 
         };
 
-        // Simpan data ke LocalStorage agar tidak hilang saat refresh halaman di GitHub
+        function testAudio() {
+            const audio = document.getElementById('localAudio');
+            audio.currentTime = 0;
+            audio.play().catch(e => {
+                alert("Error Audio: Pastikan file 'suara.mp3' tersedia di folder yang sama.");
+                console.error(e);
+            });
+        }
+
         function saveData() {
             localStorage.setItem('attendance_logs', JSON.stringify(attendanceLogs));
             localStorage.setItem('location_tools', JSON.stringify(locationTools));
@@ -158,7 +169,6 @@
             if (savedTools) locationTools = JSON.parse(savedTools);
         }
 
-        // --- CLOCK & DATE ---
         function updateClock() {
             const now = new Date();
             const timeString = now.toLocaleTimeString('id-ID', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -167,20 +177,17 @@
         setInterval(updateClock, 1000);
         document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-        // --- LOGIKA SUARA AI (Web Speech API) ---
         function speakText(text) {
-            // Membatalkan suara yang sedang berjalan jika ada
             window.speechSynthesis.cancel();
-            
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'id-ID'; 
-            utterance.rate = 0.9; // Sedikit lebih lambat agar jelas
-            utterance.pitch = 1;
+            utterance.rate = 0.9;
             window.speechSynthesis.speak(utterance);
         }
 
         function initDropdown() {
             const select = document.getElementById('studentSelect');
+            select.innerHTML = '<option value="" disabled selected>-- Pilih Nama Murid --</option>';
             STUDENTS.forEach(name => {
                 const opt = document.createElement('option');
                 opt.value = name;
@@ -203,11 +210,16 @@
 
         function processAttendance(name) {
             if (!name) return;
-
             const now = new Date();
             const currentHour = now.getHours();
             const currentMinute = now.getMinutes();
             const timeString = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+            if (currentHour < START_HOUR || (currentHour === START_HOUR && currentMinute < START_MINUTE)) {
+                alert(`Absensi belum dibuka. Silakan kembali pada pukul 07:30.`);
+                document.getElementById('studentSelect').value = "";
+                return;
+            }
 
             if (attendanceLogs.some(log => log.name === name)) {
                 alert(`${name} sudah tercatat hadir.`);
@@ -223,26 +235,21 @@
                 const loc = LOCATIONS[Math.floor(Math.random() * LOCATIONS.length)];
                 const tool = locationTools[loc] ? "Mengepel" : "Menyapu";
                 punishment = `${tool} di ${loc}`;
-                
-                // Toggle status alat untuk rotasi berikutnya
                 locationTools[loc] = !locationTools[loc];
                 
-                // Play local sound if exists
+                // Putar suara MP3 saat terlambat
                 const audio = document.getElementById('localAudio');
-                if (audio) { audio.currentTime = 0; audio.play().catch(e => {}); }
+                if (audio) { 
+                    audio.currentTime = 0; 
+                    audio.play().catch(e => console.log("Gagal putar MP3 otomatis:", e)); 
+                }
                 
-                speakText(`Murid bernama ${name} terlambat. Batas masuk adalah jam 07:40. Tugas hukuman anda adalah ${punishment}. Segera kerjakan.`);
+                speakText(`Perhatian. Murid bernama ${name} terlambat. Tugas hukuman anda adalah ${punishment}.`);
             } else {
-                speakText(`Murid bernama ${name} hadir tepat waktu. Selamat belajar.`);
+                speakText(`Murid bernama ${name} hadir tepat waktu.`);
             }
 
-            attendanceLogs.unshift({
-                name,
-                time: timeString,
-                status,
-                punishment
-            });
-
+            attendanceLogs.unshift({ name, time: timeString, status, punishment });
             saveData();
             renderLogs();
             updateToolStatusUI();
@@ -255,7 +262,6 @@
                 body.innerHTML = `<tr><td colspan="4" class="p-10 text-center text-slate-400 italic font-medium">Belum ada aktivitas hari ini.</td></tr>`;
                 return;
             }
-
             body.innerHTML = attendanceLogs.map(log => `
                 <tr class="hover:bg-indigo-50/30 transition-all ${log.status === 'Terlambat' ? 'bg-red-50/30' : ''}">
                     <td class="p-4 font-bold text-slate-700">${log.name}</td>
@@ -266,10 +272,8 @@
                             ${log.status}
                         </span>
                     </td>
-                    <td class="p-4 text-right">
-                        <div class="text-xs font-extrabold ${log.punishment !== '-' ? 'text-indigo-600' : 'text-slate-300'}">
-                            <i class="fas ${log.punishment !== '-' ? 'fa-broom' : 'fa-minus'} mr-1"></i> ${log.punishment}
-                        </div>
+                    <td class="p-4 text-right font-extrabold text-xs ${log.punishment !== '-' ? 'text-indigo-600' : 'text-slate-300'}">
+                        ${log.punishment}
                     </td>
                 </tr>
             `).join('');
@@ -289,25 +293,68 @@
                 if (log) {
                     worksheetData.push([i + 1, log.name, log.time, log.status, log.punishment]);
                 } else {
-                    worksheetData.push([i + 1, name, "-", "Alpa/Belum Lapor", "-"]);
+                    worksheetData.push([i + 1, name, "07:30", "Tepat Waktu", "-"]);
                 }
             });
 
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+            ws['!cols'] = [{ wch: 5 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 30 }];
             XLSX.utils.book_append_sheet(wb, ws, "Absensi");
             XLSX.writeFile(wb, `Laporan_Absen_${date}.xlsx`);
         }
 
+        async function downloadWord() {
+            const { Document, Packer, Paragraph, Table, TableRow, TableCell, WidthType, AlignmentType, HeadingLevel } = docx;
+            const date = new Date().toLocaleDateString('id-ID');
+            const dateFilename = date.replace(/\//g, '-');
+
+            const tableRows = [
+                new TableRow({
+                    children: ["No", "Nama Murid", "Jam Masuk", "Status", "Hukuman"].map(text => 
+                        new TableCell({ children: [new Paragraph({ text, bold: true })] })
+                    ),
+                }),
+            ];
+
+            STUDENTS.forEach((name, i) => {
+                const log = attendanceLogs.find(l => l.name === name);
+                tableRows.push(
+                    new TableRow({
+                        children: [
+                            new TableCell({ children: [new Paragraph({ text: (i + 1).toString() })] }),
+                            new TableCell({ children: [new Paragraph({ text: name })] }),
+                            new TableCell({ children: [new Paragraph({ text: log ? log.time : "07:30" })] }),
+                            new TableCell({ children: [new Paragraph({ text: log ? log.status : "Tepat Waktu" })] }),
+                            new TableCell({ children: [new Paragraph({ text: log ? log.punishment : "-" })] }),
+                        ],
+                    })
+                );
+            });
+
+            const doc = new Document({
+                sections: [{
+                    children: [
+                        new Paragraph({ text: "LAPORAN ABSENSI HARIAN", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
+                        new Paragraph({ text: `Tanggal: ${date}`, alignment: AlignmentType.CENTER }),
+                        new Paragraph({ text: "" }),
+                        new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: tableRows }),
+                    ],
+                }],
+            });
+
+            const blob = await Packer.toBlob(doc);
+            saveAs(blob, `Laporan_Absen_${dateFilename}.docx`);
+        }
+
         function resetAttendance() {
-            if (confirm("Hapus semua data kehadiran hari ini? (Ini juga akan menghapus data di penyimpanan lokal browser)")) {
+            if (confirm("Hapus semua data kehadiran hari ini?")) {
                 attendanceLogs = [];
                 localStorage.removeItem('attendance_logs');
                 renderLogs();
             }
         }
 
-        // Initialize App
         window.onload = () => {
             loadData();
             initDropdown();
